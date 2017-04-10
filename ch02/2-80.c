@@ -1,13 +1,13 @@
 #include<stdio.h>
 
-int mul3div4(int x);
+int threefourths(int x);
 
 int main() {
-  printf("%d", mul3div4(-6));
+  printf("%d", threefourths(-5));
   return 0;
 }
 
-int mul3div4(int x) {
+int threefourths(int x) {
   int w = sizeof(int) << 3;
   int sign = x >> (w - 1);
   int n1 = (x + (sign & ((1 << 1) - 1))) >> 1;

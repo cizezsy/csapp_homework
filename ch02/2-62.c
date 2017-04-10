@@ -9,6 +9,5 @@ int main() {
 }
 
 int int_shifts_are_arithmetic() {
-  int w = sizeof(int) << 3;
-  return (INT_MIN >> (w - 1)) == -1;
+  return (-1>>1) == -1;
 }

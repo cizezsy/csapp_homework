@@ -12,9 +12,7 @@ float_bits f2u(float f);
 float u2f(float_bits f);
 
 int main() {
-  for(int i = 0; i <= INT_MAX; i++) {
-    if(i % 0x10000 == 0)
-      printf("%d\n", i);
+  for(int i = INT_MIN; i <= INT_MAX; i++) {
     float myself_cast = u2f(float_i2f(i));
     float normal_cast = (float)i;
     if(myself_cast != normal_cast) {

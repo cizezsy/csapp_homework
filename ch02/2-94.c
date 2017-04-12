@@ -19,7 +19,7 @@ float_bits float_twice(float_bits f) {
   unsigned exp = (f >> 23) & 0xff;
   unsigned frac = f & 0x7fffff;
 
-  if(exp == 0xff && frac != 0)
+  if(exp == 0xff)
     return f;
 
   if(exp == 0) {

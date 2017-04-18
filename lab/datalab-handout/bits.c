@@ -161,7 +161,7 @@ int getByte(int x, int n) {
  *   Rating: 3
  */
 int logicalShift(int x, int n) {
-  return ~(~0 << 32 - n) & (x >> n)
+  return ~(~0 << 32 + ~n + 1) & (x >> n);
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -312,7 +312,7 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
-  
+
   return 2;
 }
 /*

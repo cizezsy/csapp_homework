@@ -212,7 +212,7 @@ int tmin(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  int t = x >> (n - 1);
+  int t = x >> (n + 1);
   return !t || !(t + 1); 
 }
 /*
@@ -312,9 +312,34 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
+  unsigned signInt = x & (1 << 31);
+  unsigned frac = x;
+  if(signInt) {
+    frac = ~frac + 1;
+  }
+  int count = 0;
+  unsigned i = frac;
+  while(i != 0) {
+    count++;
+    i >>= 1;
+  }
 
-  return 2;
+  unsigned exp = (count + 126) << 23;
+  frac &= ~(1 << (count - 1));
+  if(count > 24) {
+    unsigned shift = count - 24;
+    unsigned mark = 1 << shift;
+    unsigned end = mark & frac;
+    unsigned abandonTop = (mark >> 1) & frac;
+    unsigned abandon = ((mark - 1) & frac) - abandonTop;
+    frac >>= shift;
+    frac += abandonTop && (end || abandon);
+  } else {
+    frac <<= (24 - count);
+  }
+  return signInt | (exp + frac);
 }
+
 /*
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.

@@ -161,7 +161,7 @@ int getByte(int x, int n) {
  *   Rating: 3
  */
 int logicalShift(int x, int n) {
-  return ~(~0 << 32 + ~n + 1) & (x >> n);
+  return ~(~0 << (31 + ~n + 1) << 1) & (x >> n);
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -171,11 +171,24 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int bitCount(int x) {
-  x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
-  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-  x = (x & 0x0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f);
-  x = (x & 0x00ff00ff) + ((x >> 8) & 0x00ff00ff);
-  x = (x & 0x0000ffff) + ((x >> 16) & 0x0000ffff);
+  int n = 0x55;
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 1) & n);
+  n = 0x33;
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 2) & n);
+  n = 0x0f;
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 4) & n);
+  n = 0xff;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 8) & n);
+  n = 0xff;
+  n = (n << 8) + n;
+  x = (x & n) + ((x >> 16) & n);
   return x;
 }
 /*
@@ -191,7 +204,7 @@ int bang(int x) {
   x = (x >> 4) | x;
   x = (x >> 8) | x;
   x = (x >> 16) | x;
-  return x << 31;
+  return (x & 1) ^ 1;
 }
 /*
  * tmin - return minimum two's complement integer
@@ -212,8 +225,8 @@ int tmin(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  int t = x >> (n + 1);
-  return !t || !(t + 1); 
+  int t = x >> (n + ~1 + 1);
+  return !t | !(t + 1); 
 }
 /*
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -224,7 +237,7 @@ int fitsBits(int x, int n) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-  int t = (1 << n) - 1;
+  int t = ~(~0 << n);
   int sign = ((1 << 31) & x) >> 31;
   return (x + (sign & t)) >> n;
 }
@@ -246,7 +259,7 @@ int negate(int x) {
  *   Rating: 3
  */
 int isPositive(int x) {
-  return !((1 << 31) & x) && x;
+  return !((1 << 31) & x) & !!x;
 }
 /*
  * isLessOrEqual - if x <= y  then return 1, else return 0
@@ -257,10 +270,10 @@ int isPositive(int x) {
  */
 int isLessOrEqual(int x, int y) {
   int diff = y + ~x + 1;
-  int sign_x = (1 << 31) & x;
-  int sign_y = (1 << 31) & y;
-  int sign_diff = (1 << 31) & diff;
-  return (sign_x && !y) || (((sign_x && sign_y ) || (!sign_x && !sign_y)) && !sign_diff);
+  int sign_x = ((1 << 31) & x) >> 31;
+  int sign_y = ((1 << 31) & y) >> 31;
+  int sign_diff = ((1 << 31) & diff) >> 31;
+  return (sign_x & !sign_y) | (((sign_x & sign_y) | (!sign_x & !sign_y)) & !sign_diff);
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -271,6 +284,7 @@ int isLessOrEqual(int x, int y) {
  */
 int ilog2(int x) {
   int t = x >> 1;
+  int n = 0x55;
   x = t | x;
   t = x >> 2;
   x = t | x;
@@ -281,11 +295,23 @@ int ilog2(int x) {
   t = x >> 16;
   x = t | x;
   x= x >> 1;
-  x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
-  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-  x = (x & 0x0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f);
-  x = (x & 0x00ff00ff) + ((x >> 8) & 0x00ff00ff);
-  x = (x & 0x0000ffff) + ((x >> 16) & 0x0000ffff);
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 1) & n);
+  n = 0x33;
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 2) & n);
+  n = 0x0f;
+  n = (n << 8) + n;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 4) & n);
+  n = 0xff;
+  n = (n << 16) + n;
+  x = (x & n) + ((x >> 8) & n);
+  n = 0xff;
+  n = (n << 8) + n;
+  x = (x & n) + ((x >> 16) & n);
   return x;
 }
 /*
@@ -300,9 +326,11 @@ int ilog2(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
-  return (uf>>1<<1) | (!(uf >> 31)) << 31;
+  unsigned mark = ~(~0 << 8) << 23; 
+  if((uf & mark) == mark && uf << 9) return uf;
+  return (1 << 31) ^ uf;
 }
-/*
+/*  
  * float_i2f - Return bit-level equivalent of expression (float) x
  *   Result is returned as unsigned int, but
  *   it is to be interpreted as the bit-level representation of a
@@ -314,17 +342,23 @@ unsigned float_neg(unsigned uf) {
 unsigned float_i2f(int x) {
   unsigned signInt = x & (1 << 31);
   unsigned frac = x;
+  unsigned i; 
+  unsigned count;
+  unsigned exp;
+
+  if(x == 0) return 0;
+
   if(signInt) {
-    frac = ~frac + 1;
+    frac = -frac;
   }
-  int count = 0;
-  unsigned i = frac;
+  count = 0;
+  i = frac;
   while(i != 0) {
     count++;
     i >>= 1;
   }
 
-  unsigned exp = (count + 126) << 23;
+  exp = (count + 126) << 23;
   frac &= ~(1 << (count - 1));
   if(count > 24) {
     unsigned shift = count - 24;
@@ -352,18 +386,19 @@ unsigned float_i2f(int x) {
  *   Rating: 4
  */
 unsigned float_twice(unsigned uf) {
-  unsigned sign = (f >> 31);
-  unsigned exp = (f >> 23) & 0xff;
-  unsigned frac = f & 0x7fffff;
+  unsigned sign = (uf >> 31);
+  unsigned exp = (uf >> 23) & 0xff;
+  unsigned frac = uf & 0x7fffff;
+  unsigned e;
 
   if(exp == 0xff)
-    return f;
+    return uf;
 
   if(exp == 0) {
     return (sign << 31) | (frac << 1);
   } 
 
-  unsigned e = exp - (0xff >> 1);
+  e = exp - (0xff >> 1);
   exp = (e + 1) + (0xff >> 1);
 
   if(exp == 0xff) {
